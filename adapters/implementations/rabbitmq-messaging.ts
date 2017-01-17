@@ -6,8 +6,6 @@ import * as messaging from "../messaging";
 
 import Logger from "../../common/logger";
 import * as MainConst from "../../common/mainconstant";
-import { PushFCMService } from "../../adapters/pushfcm-service";
-import { PushFCMServiceImpl } from "../../adapters/implementations/pushfcm-serviceimpl";
 import { RequestFCMBO } from "../../bo/fcm/requestfcmbo";
 import { ResponseFCMBO } from "../../bo/fcm/responsefcmbo";
 import { ResultBO } from "../../bo/fcm/result";
@@ -44,7 +42,7 @@ export class RabbitMQBroker implements messaging.MessageBroker {
                     this.createChannel().then(channel => {
                          this.channel = channel;                         
                          CircuitBreaker.reportState("broker", "close");
-                         Logger.info("Process " + process.pid + " Queue Connect on ",url);  
+                         Logger.info(MainConst.logPatternProcessId(process.pid, "Queue Connect on " + url));  
                          return resolve(this);
                     });                  
                     
@@ -137,7 +135,7 @@ export class RabbitMQBroker implements messaging.MessageBroker {
             
             if(this.channel){
                 this.channel.sendToQueue(this.qname, new Buffer(JSON.stringify(msgObj)), { persistent: this.persistent });
-                Logger.info(MainConst.logPattern(msgObj.request_id, "Process " + process.pid +" MessageBroker Send : " + JSON.stringify(msgObj)));
+                Logger.info(MainConst.logPattern(msgObj.request_id, process.pid, "MessageBroker Sender : " + JSON.stringify(msgObj)));
                 return resolve(msgObj.response_id);               
             } else {
                 return reject("Process " + process.pid + " channel is null");

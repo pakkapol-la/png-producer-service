@@ -25,10 +25,10 @@ export default class PushFCMController {
             "request_id": {
                 "type": "^[0-9a-zA-Z\-]+$",
                 "mismatch": (
-                    "request id must be a string or number"
+                    "request_id must be a string or number"
                 ),
-                "invalid": "request id is invalid",
-                "required": "request id is required"
+                "invalid": "request_id is invalid",
+                "required": "request_id is required"
             }/*
             "app_id": {
                 "type": "^[0-9a-zA-Z\-]+$",
@@ -52,7 +52,7 @@ export default class PushFCMController {
             try {
                 response.header("Content-Type", "application/json; charset=utf-8");
                 let jsonRequest = JSONRequest<PushRestRequestBO>(request);
-                Logger.info(MainConst.logPattern(jsonRequest.request_id, "Process " + process.pid +" request : "+JSON.stringify(jsonRequest)));
+                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "request : "+JSON.stringify(jsonRequest)));
 
                 if (validateParam(request, response)) {
                                     
@@ -63,11 +63,11 @@ export default class PushFCMController {
 
                     Routes.getFactoryService().message_broker.publishMessage(msgObj).then(broker_resp_id => {                                              
                         let responseMessage = createResponseSuccess(msgObj.response_id); 
-                        Logger.info(MainConst.logPattern(jsonRequest.request_id, "Process " + process.pid +" response : "+JSON.stringify(responseMessage)));
+                        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
                         response.send(JSON.stringify(responseMessage));
                     }).catch(error => {                        
-                        let responseMessage = createResponseError(MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
-                        Logger.info(MainConst.logPattern(jsonRequest.request_id, "Process " + process.pid +" response : "+JSON.stringify(responseMessage)));
+                        let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
                         response.send(JSON.stringify(responseMessage));           
                     });
 
@@ -84,13 +84,13 @@ export default class PushFCMController {
 
 function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
 
-    let data_push: ParamPushBO = rest_req.data_push;
+    let push_message: ParamPushBO = rest_req.push_message;
     let req_push = new RequestFCMBO();
     let platform: string = "";
     
     //this section is mock
-    if (data_push.app_id) {
-        if ("gap" == data_push.app_id) {
+    if (rest_req.application_id) {
+        if ("gap" == rest_req.application_id) {
             req_push.to = Config.get<string>(
                 "mock-app-id-set",
                 "gap.token",
@@ -101,7 +101,7 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
                 "gap.platform",
                 ""
             );
-        } else if ("rit" == data_push.app_id) {
+        } else if ("rit" == rest_req.application_id) {
             req_push.to = Config.get<string>(
                 "mock-app-id-set",
                 "rit.token",
@@ -126,51 +126,51 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
     
     let notification = new NotificationBO();
 
-    if (data_push.title) {
-        notification.title = data_push.title;
+    if (push_message.title) {
+        notification.title = push_message.title;
     }
 
-    let body_msg = data_push.body_msg
+    let body_msg = push_message.body_message
     notification.body = body_msg;
 
-    if (data_push.icon) {
-        notification.icon = data_push.icon;
+    if (push_message.icon) {
+        notification.icon = push_message.icon;
     }
-    if (data_push.color) {
-        notification.color = data_push.color;
+    if (push_message.color) {
+        notification.color = push_message.color;
     }
 
     if(platform == MainConst.PlatformConstant.IOS){
-        if(data_push.badge){ //for ios
-            notification.badge = data_push.badge;
+        if(push_message.badge){ //for ios
+            notification.badge = push_message.badge;
         }
     }
 
-    if (data_push.tag) {
-        notification.tag = data_push.tag;
+    if (push_message.tag) {
+        notification.tag = push_message.tag;
     }
-    if (data_push.sound) {
-        notification.sound = data_push.sound;
+    if (push_message.sound) {
+        notification.sound = push_message.sound;
     }
-    if (data_push.tag) {
-        notification.tag = data_push.tag;
+    if (push_message.tag) {
+        notification.tag = push_message.tag;
     }
 
     req_push.notification = notification;
 
-    if (data_push.content_available) {
-        req_push.content_available = data_push.content_available;
+    if (push_message.content_available) {
+        req_push.content_available = push_message.content_available;
     } else {
         req_push.content_available = true;
     }
 
-    if (data_push.collapse_key) {
-        req_push.collapse_key = data_push.collapse_key;
+    if (push_message.collapse_key) {
+        req_push.collapse_key = push_message.collapse_key;
     }
-    if (data_push.collapse_key) {
-        req_push.collapse_key = data_push.collapse_key;
+    if (push_message.collapse_key) {
+        req_push.collapse_key = push_message.collapse_key;
     }
-    if (data_push.priority && RequestFCMBO.PRIORITY_HIGH == data_push.priority) {
+    if (push_message.priority && RequestFCMBO.PRIORITY_HIGH == push_message.priority) {
         req_push.priority = RequestFCMBO.PRIORITY_HIGH;
     } else {
         req_push.priority = RequestFCMBO.PRIORITY_NORMAL;
@@ -178,8 +178,8 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
 
     req_push.delay_while_idle = true;
 
-    if (data_push.time_to_live) {
-        req_push.time_to_live = data_push.time_to_live;
+    if (push_message.time_to_live) {
+        req_push.time_to_live = push_message.time_to_live;
     }
 
     let dry_run: boolean = Config.get<boolean>(
@@ -192,8 +192,8 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
     }
 
     let dataPayload: {[key: string]: string} = {};
-    if (data_push.data) {
-        dataPayload = data_push.data;
+    if (push_message.data) {
+        dataPayload = push_message.data;
     }
     dataPayload[RequestFCMBO.DATA_PAYLOAD_KEY_MESSAGE] = body_msg;
 
@@ -224,10 +224,11 @@ function createResponseSuccess(message_id: string): PushRestResponseBO {
 }
 
 
-function createResponseError(error_code: string, ext_msg?: string): PushRestResponseBO {
+function createResponseError(request_id: string, error_code: string, ext_msg?: string): PushRestResponseBO {
     let responseMessage = new PushRestResponseBO();    
     let err_msg = MainConst.ErrorCode.getErrCode(error_code);
 
+    responseMessage.request_id = request_id;
     responseMessage.status = MainConst.StatusConstant.STATUS_FAIL; // 0 = success , 1 = fail    
     responseMessage.error_code = err_msg.err_code;
     responseMessage.error_message = err_msg.err_msg;
@@ -245,16 +246,16 @@ function validateParam(request: express.Request, response: express.Response): bo
     let responseMessage = new PushRestResponseBO();
     let is_false: boolean = false;
 
-    if (jsonRequest.data_push) {
-        let data_push: ParamPushBO = jsonRequest.data_push;
+    if (jsonRequest.push_message) {
+        let data_push: ParamPushBO = jsonRequest.push_message;
 
-        if (is_false == false && !data_push.user_id && !data_push.cif && !data_push.citizen_id) {
-            responseMessage = createResponseError(MainConst.ErrorCode.MPNG002.err_code, "required 1 parameter in this group [user_id, cif, citizen_id]") as PushRestResponseBO;           
+        if (is_false == false && !jsonRequest.user_id) {
+            responseMessage = createResponseError(MainConst.ErrorCode.MPNG002.err_code, "user_id is required") as PushRestResponseBO;           
             is_false = true;          
         }
 
-        if (is_false == false && !data_push.app_id) {
-            responseMessage = createResponseError(MainConst.ErrorCode.MPNG002.err_code, "app id is required") as PushRestResponseBO;           
+        if (is_false == false && !jsonRequest.application_id) {
+            responseMessage = createResponseError(MainConst.ErrorCode.MPNG002.err_code, "application_id is required") as PushRestResponseBO;           
             is_false = true;          
         }
         /*
@@ -264,12 +265,12 @@ function validateParam(request: express.Request, response: express.Response): bo
         }
         */
     } else {        
-        responseMessage = createResponseError(MainConst.ErrorCode.MPNG005.err_code) as PushRestResponseBO;
+        responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG005.err_code) as PushRestResponseBO;
         is_false = true;   
     }
 
     if(is_false == true){
-        Logger.info(MainConst.logPattern(jsonRequest.request_id, "response : "+JSON.stringify(responseMessage)));
+        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
         response.send(JSON.stringify(responseMessage)); 
         return false;      
     }

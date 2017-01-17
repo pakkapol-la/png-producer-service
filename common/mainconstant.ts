@@ -52,9 +52,17 @@ export function genResponseId(): string {
     return dt.getFullYear().toString() + (dt.getMonth() + 1).toString() + dt.getDate() + dt.getHours() + dt.getMinutes() + dt.getSeconds() + dt.getMilliseconds();
 }
 
-
+/*
 //export function logPattern(process_id: string, request_id: string, msg: string): string {
 export function logPattern(request_id: string, msg: string): string {    
     //return "Process=" + process_id + ",request_id=" + request_id + ", " + msg;
     return "request_id=" + request_id + ", " + msg;
+}
+*/
+export function logPattern(request_id: string, process_id: number, msg: string): string {
+    return "request_id=" + request_id + ",process_id=" + process_id + "," + msg;
+}
+
+export function logPatternProcessId(process_id: number, msg: string): string {
+    return "process_id=" + process_id + "," + msg;
 }
