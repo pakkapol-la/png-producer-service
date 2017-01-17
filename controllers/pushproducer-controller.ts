@@ -14,6 +14,8 @@ import { NotificationBO } from "../bo/fcm/notificationbo";
 import * as messaging from "../adapters/messaging";
 import * as Routes from "../routes";
 
+import PushMessages from "../models/pushmessages";
+
 export default class PushFCMController {
 
     delay = 10;
@@ -57,20 +59,33 @@ export default class PushFCMController {
                 if (validateParam(request, response)) {
                                     
                     //will check platform android by app_id , ios for set some field special for each platform
-                    // and get server key depend by app_id ,  get token by user_id , cif, citizen_id
-                   
-                    let msgObj: messaging.MessageContent = preparePushMsg(jsonRequest);                   
+                    // and get server key depend by app_id ,  get token by user_id , cif, citizen_id                    
+                    let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest);                   
 
-                    Routes.getFactoryService().message_broker.publishMessage(msgObj).then(broker_resp_id => {                                              
-                        let responseMessage = createResponseSuccess(msgObj.response_id); 
-                        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                        response.send(JSON.stringify(responseMessage));
-                    }).catch(error => {                        
+                    let msg_db = prepareDBMsg(jsonRequest, msg_obj);
+
+                    Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
+                        
+                        if (push_message_document.id) {
+                            msg_obj.record_id = push_message_document.id;
+                        }
+                        
+                        Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
+                            let responseMessage = createResponseSuccess(msg_obj.response_id); 
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
+                            response.send(JSON.stringify(responseMessage));
+                        }).catch(error => {                        
+                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
+                            response.send(JSON.stringify(responseMessage));           
+                        });
+
+                    }).catch(error => {
                         let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
                         Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                        response.send(JSON.stringify(responseMessage));           
+                        response.send(JSON.stringify(responseMessage));  
                     });
-
+             
 
                 }
             } catch(err) {
@@ -80,6 +95,29 @@ export default class PushFCMController {
         }
     };
 };
+
+
+function prepareDBMsg(jsonRequest: PushRestRequestBO, message_content: messaging.MessageContent): PushMessages{
+    let push_message = {
+            request_id: message_content.request_id,
+            application_id: jsonRequest.application_id,
+            user_id: jsonRequest.user_id,
+            started_time: new Date(),
+            //put_time: new Date(),
+            //pulled_time: new Date(),  
+            //sent_time: new Date(),
+            //elapsed: 123,
+            status: 2, //in process
+            interface_type: jsonRequest.interface_type,
+            message_type: parseInt(jsonRequest.message_type),
+            worker_id: process.pid.toString(),
+            push_provider_code: message_content.platform,
+            push_token_id: message_content.content.to,
+            push_message: message_content.content
+        } as PushMessages;
+
+    return push_message;
+}
 
 
 function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
@@ -114,12 +152,12 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
             );
         } else {
             //mock hard rit token
-            req_push.to = "APA91bEK8cIEtia7e_KuM3C04nakPp3OJ6eA4QpItPm08dQbg0dR0H51KIWxs7t7XXC6TphZdBGiAXL95coMonzTJ88EnlDHLYtumrwLJFSW1Lbc5NtosWaCQ_DT6wuosLmAvUmlLe9CJJNoW--weM8jdHh4xcbF2Q";
+            req_push.to = "dicxg4dMp5Y:APA91bGTIHN6U2ztIarHJa4ONpIuH11JcYG7DnpWDPcVz_Lfj324ARTHDNSE2M0oUs8Basin0YovbGbMcbwKGDo1gy4KuXufqEQp3EpSO0aRWWJgTFi4_XPOUKQw7vo-FqUmK6TebryG";
             platform = MainConst.PlatformConstant.IOS;
         }
     } else {
         //mock hard rit token
-        req_push.to = "APA91bEK8cIEtia7e_KuM3C04nakPp3OJ6eA4QpItPm08dQbg0dR0H51KIWxs7t7XXC6TphZdBGiAXL95coMonzTJ88EnlDHLYtumrwLJFSW1Lbc5NtosWaCQ_DT6wuosLmAvUmlLe9CJJNoW--weM8jdHh4xcbF2Q";
+        req_push.to = "dicxg4dMp5Y:APA91bGTIHN6U2ztIarHJa4ONpIuH11JcYG7DnpWDPcVz_Lfj324ARTHDNSE2M0oUs8Basin0YovbGbMcbwKGDo1gy4KuXufqEQp3EpSO0aRWWJgTFi4_XPOUKQw7vo-FqUmK6TebryG";
         platform = MainConst.PlatformConstant.IOS;
     }
     //end this section is mock
@@ -199,9 +237,10 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
 
     req_push.data = dataPayload;
 
-    let msgObj = {
+    let msgObj = {        
         request_id: rest_req.request_id,
         response_id: MainConst.genResponseId(),
+        platform: platform,
         content: req_push,
         server_key: Config.get<string>(
                         "push-notification-service",

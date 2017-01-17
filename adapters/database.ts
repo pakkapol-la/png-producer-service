@@ -1,9 +1,9 @@
-import LocationInfo from "../models/locationinfo";
+import PushMessages from "../models/pushmessages";
 
 interface Database {
     connect(url: string, options?: any): Promise<Database>;
-    disconnect(): Promise<void>;
-    getAtmLocation(lat: string, lng: string, distance: string) : Promise<LocationInfo[]>;
+    disconnect(): Promise<void>;    
+    insertPushMessages(push_message: PushMessages): Promise<PushMessages>;   
 }
 
 export default Database;

@@ -1,7 +1,9 @@
 export interface MessageContent {
+    record_id: string;
     request_id: string;
     response_id: string;
     server_key: string;
+    platform: string;
     content: any;   
 };
 
