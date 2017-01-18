@@ -4,7 +4,9 @@ import Config from "../../common/config";
 import CircuitBreaker from "../../common/circuit-breaker";
 import Database from "../database";
 import {PushMessages, PushMessagesModel} from "../../models/implementations/mongodb-pushmessages";
+import {PushTokens, PushTokensModel} from "../../models/implementations/mongodb-pushtokens";
 import Logger from "../../common/logger";
+
 
 interface MongoDBOptions {
     reconnectionTime?: number;
@@ -71,23 +73,7 @@ export default class MongoDBDatabase implements Database {
         });
     }
 
-    getAtmLocation(lat: string, lng: string, distance: string){
-        return new Promise<PushMessages[]>((resolve, reject) => {
-            if(this.error){
-                return reject(new Error(`DBError: ${this.error}`));
-            }
-            PushMessagesModel.find()
-                .then(PushMessagesList => {
-                    return resolve(PushMessagesList);
-                })
-                .catch(error => {
-                    return reject(new Error(`DBError: ${error}`));
-                });
-
-        });
-    }
-
-
+    
     insertPushMessages(push_message: PushMessages){
         return new Promise<PushMessages>((resolve, reject) => {
             if (this.error) {
@@ -137,5 +123,29 @@ export default class MongoDBDatabase implements Database {
         });
     }
 
+
+    findPushtokesByUserId(user_id: string){
+        return new Promise<PushTokens>((resolve, reject) => {
+            if(this.error){
+                return reject(new Error(`DBError: ${this.error}`));
+            }
+            /*
+            PushTokensModel.find()
+                .then(PushTokensList => {
+                    return resolve(PushTokensList);
+                })
+                .catch(error => {
+                    return reject(new Error(`DBError: ${error}`));
+                });
+            */
+            PushTokensModel.findOne({user_id: user_id}, function(err, document) {
+                if(err){
+                    return reject(new Error(`DBError: ${err}`));
+                }
+                return resolve(document);
+            });    
+
+        });
+    }
 
 }

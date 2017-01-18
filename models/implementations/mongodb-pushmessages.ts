@@ -81,6 +81,6 @@ const PushMessagesSchema = new mongoose.Schema({
 
 });
 
-export const PushMessagesModel = mongoose.model<MongoPushMessages>("PNG", PushMessagesSchema, "pushmessages");
+export const PushMessagesModel = mongoose.model<MongoPushMessages>("pushmessages", PushMessagesSchema, "pushmessages");
 
 export default PushMessagesModel;

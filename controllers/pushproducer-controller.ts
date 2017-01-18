@@ -59,33 +59,42 @@ export default class PushFCMController {
                 if (validateParam(request, response)) {
                                     
                     //will check platform android by app_id , ios for set some field special for each platform
-                    // and get server key depend by app_id ,  get token by user_id , cif, citizen_id                    
-                    let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest);                   
+                    // and get server key depend by app_id ,  get token by user_id 
 
-                    let msg_db = prepareDBMsg(jsonRequest, msg_obj);
+                    Routes.getFactoryService().db_service.findPushtokesByUserId(jsonRequest.user_id).then(push_tokens_document => {
+                   
+                        let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest, push_tokens_document.token, push_tokens_document.push_provider_code);                   
 
-                    Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
-                        
-                        if (push_message_document.id) {
-                            msg_obj.record_id = push_message_document.id;
-                        }
-                        
-                        Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
-                            let responseMessage = createResponseSuccess(msg_obj.response_id); 
-                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                            response.send(JSON.stringify(responseMessage));
-                        }).catch(error => {                        
+                        let msg_db = prepareDBMsg(jsonRequest, msg_obj);
+
+                        Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
+                            
+                            if (push_message_document.id) {
+                                msg_obj.record_id = push_message_document.id;
+                            }
+                            
+                            Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
+                                let responseMessage = createResponseSuccess(msg_obj.response_id); 
+                                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
+                                response.send(JSON.stringify(responseMessage));
+                            }).catch(error => {                        
+                                let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
+                                response.send(JSON.stringify(responseMessage));           
+                            });
+
+                        }).catch(error => {
                             let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
                             Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                            response.send(JSON.stringify(responseMessage));           
+                            response.send(JSON.stringify(responseMessage));  
                         });
 
                     }).catch(error => {
-                        let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                        let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.toString()) as PushRestResponseBO;
                         Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                        response.send(JSON.stringify(responseMessage));  
+                        response.send(JSON.stringify(responseMessage));    
                     });
-             
+        
 
                 }
             } catch(err) {
@@ -120,10 +129,12 @@ function prepareDBMsg(jsonRequest: PushRestRequestBO, message_content: messaging
 }
 
 
-function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
-
+function preparePushMsg(rest_req: PushRestRequestBO, push_token: string, platform: string): messaging.MessageContent {
+    
     let push_message: ParamPushBO = rest_req.push_message;
+
     let req_push = new RequestFCMBO();
+    /*
     let platform: string = "";
     
     //this section is mock
@@ -161,7 +172,10 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
         platform = MainConst.PlatformConstant.IOS;
     }
     //end this section is mock
-    
+    */
+
+    req_push.to = push_token;
+   
     let notification = new NotificationBO();
 
     if (push_message.title) {
@@ -237,7 +251,7 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
 
     req_push.data = dataPayload;
 
-    let msgObj = {        
+    let msg_obj = {        
         request_id: rest_req.request_id,
         response_id: MainConst.genResponseId(),
         platform: platform,
@@ -249,7 +263,8 @@ function preparePushMsg(rest_req: PushRestRequestBO): messaging.MessageContent {
                     )
     } as messaging.MessageContent;
 
-    return msgObj;
+    return msg_obj;    
+
 }
 
 
