@@ -77,19 +77,22 @@ export default class PushFCMController {
                                 let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
                                 Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
                                 response.send(JSON.stringify(responseMessage));
-                            }).catch(error => {                        
+                            }).catch(error => {  
+                                //error send queue                      
                                 let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
                                 Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
                                 response.send(JSON.stringify(responseMessage));           
                             });
 
                         }).catch(error => {
+                            //error insert db
                             let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
                             Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
                             response.send(JSON.stringify(responseMessage));  
                         });
 
                     }).catch(error => {
+                        //error find token
                         let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.toString()) as PushRestResponseBO;
                         Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
                         response.send(JSON.stringify(responseMessage));    
@@ -253,7 +256,7 @@ function preparePushMsg(rest_req: PushRestRequestBO, push_token: string, platfor
 
     let msg_obj = {        
         request_id: rest_req.request_id,
-        response_id: MainConst.genResponseId(),
+        response_id: MainConst.genResponseId(process.pid.toString()),
         platform: platform,
         content: req_push,
         server_key: Config.get<string>(
@@ -290,7 +293,7 @@ function createResponseError(request_id: string, error_code: string, ext_msg?: s
     if (ext_msg) {
         responseMessage.error_message = responseMessage.error_message + " : " + ext_msg;
     }
-    responseMessage.response_id = MainConst.genResponseId();
+    responseMessage.response_id = MainConst.genResponseId(process.pid.toString());
     //ref_id: uuid.v4(),
     return responseMessage;
 }
