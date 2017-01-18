@@ -138,6 +138,7 @@ export default class MongoDBDatabase implements Database {
                     return reject(new Error(`DBError: ${error}`));
                 });
             */
+            
             PushTokensModel.findOne({user_id: user_id}, function(err, document) {
                 if(err){
                     return reject(new Error(`DBError: ${err}`));

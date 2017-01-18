@@ -52,6 +52,13 @@ export default class PushFCMController {
         action: (request: express.Request, response: express.Response) => {
             
             try {
+
+                let process_log_db: boolean =  Config.get<boolean>(
+                    "mpng-service",
+                    "process-log-db",
+                    true
+                    );
+
                 response.header("Content-Type", "application/json; charset=utf-8");
                 let jsonRequest = JSONRequest<PushRestRequestBO>(request);
                 Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "request : "+JSON.stringify(jsonRequest)));
@@ -60,44 +67,68 @@ export default class PushFCMController {
                                     
                     //will check platform android by app_id , ios for set some field special for each platform
                     // and get server key depend by app_id ,  get token by user_id 
+                    if (process_log_db) {
+                        
+                        Routes.getFactoryService().db_service.findPushtokesByUserId(jsonRequest.user_id).then(push_tokens_document => {
+                    
+                            let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest, push_tokens_document.token, push_tokens_document.push_provider_code);                   
 
-                    Routes.getFactoryService().db_service.findPushtokesByUserId(jsonRequest.user_id).then(push_tokens_document => {
-                   
-                        let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest, push_tokens_document.token, push_tokens_document.push_provider_code);                   
+                            let msg_db = prepareDBMsg(jsonRequest, msg_obj);
 
-                        let msg_db = prepareDBMsg(jsonRequest, msg_obj);
+                            Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
+                                
+                                if (push_message_document.id) {
+                                    msg_obj.record_id = push_message_document.id;
+                                }
+                                
+                                Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
+                                    let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
+                                    Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success , "+JSON.stringify(responseMessage)));
+                                    response.send(JSON.stringify(responseMessage));
+                                }).catch(error => {  
+                                    //error send queue                      
+                                    let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                                    Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                                    response.send(JSON.stringify(responseMessage));           
+                                });
 
-                        Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
-                            
-                            if (push_message_document.id) {
-                                msg_obj.record_id = push_message_document.id;
-                            }
-                            
-                            Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
-                                let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
-                                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                                response.send(JSON.stringify(responseMessage));
-                            }).catch(error => {  
-                                //error send queue                      
+                            }).catch(error => {
+                                //error insert db
                                 let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
-                                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                                response.send(JSON.stringify(responseMessage));           
+                                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                                response.send(JSON.stringify(responseMessage));  
                             });
 
                         }).catch(error => {
-                            //error insert db
-                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
-                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                            response.send(JSON.stringify(responseMessage));  
+                            //error find token
+                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.toString()) as PushRestResponseBO;
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                            response.send(JSON.stringify(responseMessage));    
                         });
 
-                    }).catch(error => {
-                        //error find token
-                        let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.toString()) as PushRestResponseBO;
-                        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
-                        response.send(JSON.stringify(responseMessage));    
-                    });
-        
+                    } else {
+
+                         // case not log in DB
+                         let token = "dicxg4dMp5Y:APA91bGTIHN6U2ztIarHJa4ONpIuH11JcYG7DnpWDPcVz_Lfj324ARTHDNSE2M0oUs8Basin0YovbGbMcbwKGDo1gy4KuXufqEQp3EpSO0aRWWJgTFi4_XPOUKQw7vo-FqUmK6TebryG";
+                         //let token = null as any;
+
+                         let push_provider_code = "FCM";
+                         
+                         let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest, token, push_provider_code);                   
+
+                         Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
+                            let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success , "+JSON.stringify(responseMessage)));
+                            response.send(JSON.stringify(responseMessage));
+                         }).catch(error => {  
+                            //error send queue                      
+                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                            response.send(JSON.stringify(responseMessage));           
+                         });
+                            
+                    }
+       
 
                 }
             } catch(err) {
@@ -328,7 +359,7 @@ function validateParam(request: express.Request, response: express.Response): bo
     }
 
     if(is_false == true){
-        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
+        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
         response.send(JSON.stringify(responseMessage)); 
         return false;      
     }
