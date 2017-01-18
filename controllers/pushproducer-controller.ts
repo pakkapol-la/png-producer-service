@@ -74,7 +74,7 @@ export default class PushFCMController {
                             }
                             
                             Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
-                                let responseMessage = createResponseSuccess(msg_obj.response_id); 
+                                let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
                                 Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : "+JSON.stringify(responseMessage)));
                                 response.send(JSON.stringify(responseMessage));
                             }).catch(error => {                        
@@ -268,10 +268,11 @@ function preparePushMsg(rest_req: PushRestRequestBO, push_token: string, platfor
 }
 
 
-function createResponseSuccess(message_id: string): PushRestResponseBO {
+function createResponseSuccess(request_id: string, message_id: string): PushRestResponseBO {
     let responseMessage = new PushRestResponseBO();    
     
     responseMessage.status = MainConst.StatusConstant.STATUS_SUCCESS; // 0 = success , 1 = fail    
+    responseMessage.request_id = request_id;
     responseMessage.response_id = message_id;
 
     return responseMessage;
