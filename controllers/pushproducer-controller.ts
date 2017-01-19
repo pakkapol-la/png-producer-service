@@ -87,21 +87,21 @@ export default class PushFCMController {
                                     response.send(JSON.stringify(responseMessage));
                                 }).catch(error => {  
                                     //error send queue                      
-                                    let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                                    let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
                                     Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
                                     response.send(JSON.stringify(responseMessage));           
                                 });
 
                             }).catch(error => {
                                 //error insert db
-                                let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                                let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
                                 Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
                                 response.send(JSON.stringify(responseMessage));  
                             });
 
                         }).catch(error => {
                             //error find token
-                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.toString()) as PushRestResponseBO;
+                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.stack) as PushRestResponseBO; error.s
                             Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
                             response.send(JSON.stringify(responseMessage));    
                         });
@@ -109,7 +109,12 @@ export default class PushFCMController {
                     } else {
 
                          // case not log in DB
-                         let token = "dicxg4dMp5Y:APA91bGTIHN6U2ztIarHJa4ONpIuH11JcYG7DnpWDPcVz_Lfj324ARTHDNSE2M0oUs8Basin0YovbGbMcbwKGDo1gy4KuXufqEQp3EpSO0aRWWJgTFi4_XPOUKQw7vo-FqUmK6TebryG";
+                         //let token = "dicxg4dMp5Y:APA91bGTIHN6U2ztIarHJa4ONpIuH11JcYG7DnpWDPcVz_Lfj324ARTHDNSE2M0oUs8Basin0YovbGbMcbwKGDo1gy4KuXufqEQp3EpSO0aRWWJgTFi4_XPOUKQw7vo-FqUmK6TebryG";
+                         let token = Config.get<string>(
+                                "mock-app-id-set",
+                                "rit.token",
+                                ""
+                            );
                          //let token = null as any;
 
                          let push_provider_code = "FCM";
@@ -122,7 +127,7 @@ export default class PushFCMController {
                             response.send(JSON.stringify(responseMessage));
                          }).catch(error => {  
                             //error send queue                      
-                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.toString()) as PushRestResponseBO;
+                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
                             Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
                             response.send(JSON.stringify(responseMessage));           
                          });
