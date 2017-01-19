@@ -83,26 +83,26 @@ export default class PushFCMController {
                                 
                                 Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
                                     let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
-                                    Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success , "+JSON.stringify(responseMessage)));
+                                    Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success="+JSON.stringify(responseMessage)));
                                     response.send(JSON.stringify(responseMessage));
                                 }).catch(error => {  
                                     //error send queue                      
                                     let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
-                                    Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                                    Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
                                     response.send(JSON.stringify(responseMessage));           
                                 });
 
                             }).catch(error => {
                                 //error insert db
                                 let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
-                                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                                Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
                                 response.send(JSON.stringify(responseMessage));  
                             });
 
                         }).catch(error => {
                             //error find token
                             let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.stack) as PushRestResponseBO; error.s
-                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
                             response.send(JSON.stringify(responseMessage));    
                         });
 
@@ -123,12 +123,12 @@ export default class PushFCMController {
 
                          Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
                             let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
-                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success , "+JSON.stringify(responseMessage)));
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success="+JSON.stringify(responseMessage)));
                             response.send(JSON.stringify(responseMessage));
                          }).catch(error => {  
                             //error send queue                      
                             let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
-                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+                            Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
                             response.send(JSON.stringify(responseMessage));           
                          });
                             
@@ -364,7 +364,7 @@ function validateParam(request: express.Request, response: express.Response): bo
     }
 
     if(is_false == true){
-        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error , "+JSON.stringify(responseMessage)));
+        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
         response.send(JSON.stringify(responseMessage)); 
         return false;      
     }
