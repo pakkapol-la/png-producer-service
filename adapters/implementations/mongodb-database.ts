@@ -68,7 +68,8 @@ export default class MongoDBDatabase implements Database {
                     return resolve();
                 })
                 .catch(error => {
-                    return reject(new Error(`DBError: ${error}`));
+                    //return reject(new Error(`DBError: ${error}`));
+                    return reject(error);
                 });
         });
     }
@@ -76,10 +77,11 @@ export default class MongoDBDatabase implements Database {
     
     insertPushMessages(push_message: PushMessages){
         return new Promise<PushMessages>((resolve, reject) => {
+            /*
             if (this.error) {
                 return reject(`DBError: ${this.error}`);
             }
-            
+            */
             let pushmessages_model = new PushMessagesModel();
 
             pushmessages_model.request_id = push_message.request_id;
@@ -116,7 +118,8 @@ export default class MongoDBDatabase implements Database {
                 return resolve(push_message_document);
             })
             .catch(error => {
-                return reject(`DBError: ${error}`);
+                //return reject(`DBError: ${error}`);
+                return reject(error);
             });
             
             
@@ -141,7 +144,8 @@ export default class MongoDBDatabase implements Database {
             
             PushTokensModel.findOne({user_id: user_id}, function(err, document) {
                 if(err){
-                    return reject(new Error(`DBError: ${err}`));
+                    //return reject(new Error(`DBError: ${err}`));
+                    return reject(err);
                 }
                 return resolve(document);
             });    
