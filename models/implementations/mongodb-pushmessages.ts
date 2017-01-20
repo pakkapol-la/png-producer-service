@@ -58,8 +58,8 @@ const PushMessagesSchema = new mongoose.Schema({
         type: Number,
         required: false
     },
-     status: {
-        type: String,
+    status: {
+        type: Number,
         required: false
     },
     error_code: {
@@ -70,11 +70,11 @@ const PushMessagesSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-     push_token_id: {
+    push_token_id: {
         type: String,
         required: false
     },
-     push_message: {
+    push_message: {
         type: Object,
         required: false
     } 
