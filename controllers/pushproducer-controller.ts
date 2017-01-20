@@ -21,8 +21,8 @@ export default class PushFCMController {
     delay = 10;
 
     do = {
-        //require: [],
-        require: ["db"],
+        require: [],
+        //require: ["db"],
         expectation: {
             "request_id": {
                 "type": "^[0-9a-zA-Z\-]+$",
