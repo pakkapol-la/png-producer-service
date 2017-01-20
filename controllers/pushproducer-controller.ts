@@ -155,7 +155,7 @@ function prepareDBMsg(jsonRequest: PushRestRequestBO, message_content: messaging
             //pulled_time: new Date(),  
             //sent_time: new Date(),
             //elapsed: 123,
-            status: 2, //in process
+            status: 99, //in process
             interface_type: jsonRequest.interface_type,
             message_type: parseInt(jsonRequest.message_type),
             worker_id: process.pid.toString(),
