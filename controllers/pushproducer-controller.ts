@@ -77,6 +77,8 @@ export default class PushFCMController {
 
                                 let msg_db = prepareDBMsg(jsonRequest, msg_obj);
 
+                                msg_obj.started_time = msg_db.started_time;
+
                                 Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
                                     
                                     if (push_message_document.id) {
