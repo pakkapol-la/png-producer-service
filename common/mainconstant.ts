@@ -2,8 +2,14 @@
 export class StatusConstant { 
     public static STATUS_SUCCESS: string = "0"; // 0 = success , 1 = fail 
     public static STATUS_FAIL: string = "1";
-}  
+} 
 
+export class PushMessagesStatus { 
+    public static STATUS_SUCCESS: number = 0; 
+    public static STATUS_FAIL: number = 1;
+    public static STATUS_FAIL_SENT: number = 2;
+    public static STATUS_IN_PROCESS: number = 99;
+} 
 
 export class PlatformConstant { 
     public static ANDROID: string = "ANDROID"; 

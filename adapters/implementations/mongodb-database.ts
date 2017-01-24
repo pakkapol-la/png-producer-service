@@ -135,7 +135,7 @@ export default class MongoDBDatabase implements Database {
     }
 
 
-    findPushtokesByUserId(user_id: string){
+    findPushtokesByUserIdAndApplicationId(v_user_id: string, v_application_id: string){
         return new Promise<PushTokens>((resolve, reject) => {
             /*
             if(this.error){
@@ -152,7 +152,7 @@ export default class MongoDBDatabase implements Database {
                 });
             */
             
-            PushTokensModel.findOne({user_id: user_id}, function(err, document) {
+            PushTokensModel.findOne({application_id: v_application_id, user_id: v_user_id}, function(err, document) {
                 if(err){
                     //return reject(new Error(`DBError: ${err}`));
                     return reject(err);

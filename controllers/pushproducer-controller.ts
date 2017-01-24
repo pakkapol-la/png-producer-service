@@ -69,39 +69,48 @@ export default class PushFCMController {
                     // and get server key depend by app_id ,  get token by user_id 
                     if (process_log_db) {
                         
-                        Routes.getFactoryService().db_service.findPushtokesByUserId(jsonRequest.user_id).then(push_tokens_document => {
-                    
-                            let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest, push_tokens_document.token, push_tokens_document.push_provider_code);                   
+                        Routes.getFactoryService().db_service.findPushtokesByUserIdAndApplicationId(jsonRequest.user_id, jsonRequest.application_id).then(push_tokens_document => {
+                            
+                            if (push_tokens_document.token) {
 
-                            let msg_db = prepareDBMsg(jsonRequest, msg_obj);
+                                let msg_obj: messaging.MessageContent = preparePushMsg(jsonRequest, push_tokens_document.token, push_tokens_document.push_provider_code);                   
 
-                            Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
-                                
-                                if (push_message_document.id) {
-                                    msg_obj.record_id = push_message_document.id;
-                                }
-                                
-                                Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
-                                    let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
-                                    Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success="+JSON.stringify(responseMessage)));
-                                    response.send(JSON.stringify(responseMessage));
-                                }).catch(error => {  
-                                    //error send queue                      
+                                let msg_db = prepareDBMsg(jsonRequest, msg_obj);
+
+                                Routes.getFactoryService().db_service.insertPushMessages(msg_db).then(push_message_document => {
+                                    
+                                    if (push_message_document.id) {
+                                        msg_obj.record_id = push_message_document.id;
+                                    }
+                                    
+                                    Routes.getFactoryService().message_broker.publishMessage(msg_obj).then(broker_resp_id => {                                              
+                                        let responseMessage = createResponseSuccess(jsonRequest.request_id, msg_obj.response_id); 
+                                        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : success="+JSON.stringify(responseMessage)));
+                                        response.send(JSON.stringify(responseMessage));
+                                    }).catch(error => {  
+                                        //error send queue                      
+                                        let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
+                                        Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
+                                        response.send(JSON.stringify(responseMessage));           
+                                    });
+
+                                }).catch(error => {
+                                    //error insert db
                                     let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
                                     Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
-                                    response.send(JSON.stringify(responseMessage));           
+                                    response.send(JSON.stringify(responseMessage));  
                                 });
 
-                            }).catch(error => {
-                                //error insert db
-                                let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG001.err_code, error.stack) as PushRestResponseBO;
+                            } else {
+                                //token is null
+                                let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, "token is null") as PushRestResponseBO;
                                 Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
-                                response.send(JSON.stringify(responseMessage));  
-                            });
-
+                                response.send(JSON.stringify(responseMessage));   
+                            }
+                            
                         }).catch(error => {
                             //error find token
-                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.stack) as PushRestResponseBO; error.s
+                            let responseMessage = createResponseError(jsonRequest.request_id, MainConst.ErrorCode.MPNG007.err_code, error.stack) as PushRestResponseBO;
                             Logger.info(MainConst.logPattern(jsonRequest.request_id, process.pid, "response : error="+JSON.stringify(responseMessage)));
                             response.send(JSON.stringify(responseMessage));    
                         });
@@ -155,7 +164,7 @@ function prepareDBMsg(jsonRequest: PushRestRequestBO, message_content: messaging
             //pulled_time: new Date(),  
             //sent_time: new Date(),
             //elapsed: 123,
-            status: 99, //in process
+            status: MainConst.PushMessagesStatus.STATUS_IN_PROCESS, //99 in process
             interface_type: jsonRequest.interface_type,
             message_type: parseInt(jsonRequest.message_type),
             worker_id: process.pid.toString(),
