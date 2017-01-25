@@ -8,6 +8,8 @@ export class PushMessagesStatus {
     public static STATUS_SUCCESS: number = 0; 
     public static STATUS_FAIL: number = 1;
     public static STATUS_FAIL_SENT: number = 2;
+    public static STATUS_FAIL_AFTER_SENT: number = 3;
+    public static STATUS_IN_PROCESS_BEFORE_SENT: number = 98;
     public static STATUS_IN_PROCESS: number = 99;
 } 
 
