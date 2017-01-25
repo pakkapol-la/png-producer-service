@@ -67,7 +67,7 @@ mpng-service:
     log-file: /home/devadm/producer/app/logs
 
   mongodb:
-    connection-url: "mongodb://203.150.69.92:27017/png"
-    #connection-url: "mongodb://127.0.0.1:27017/png"
+    connection-url: "mongodb://203.150.69.92:27017/png?maxPoolSize=200&connectTimeoutMS=50000&socketTimeoutMS=20000"
+    #connection-url: "mongodb://127.0.0.1:27017/png?maxPoolSize=200&connectTimeoutMS=50000&socketTimeoutMS=20000"
     # connection-timeout: 60000
     reconnect-time: 5000
